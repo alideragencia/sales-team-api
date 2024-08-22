@@ -18,6 +18,7 @@ const envSchema = z.object({
   // REDRIVE_OWNER_ID: z.string().min(1),
   // REDRIVE_TOKEN: z.string().min(1),
 
+
   PORT: z.coerce.number().default(8080)
 });
 

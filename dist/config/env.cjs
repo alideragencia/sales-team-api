@@ -38,17 +38,17 @@ var import_path = __toESM(require("path"), 1);
 var import_zod = require("zod");
 import_dotenv.default.config({ path: import_path.default.resolve(process.cwd(), `.env.${process.env.NODE_ENV}`) });
 var envSchema = import_zod.z.object({
-  FIREBASE_API_KEY: import_zod.z.string().min(1),
-  FIREBASE_AUTH_DOMAIN: import_zod.z.string().min(1),
-  FIREBASE_DATABASE_URL: import_zod.z.string().min(1),
-  FIREBASE_PROJECT_ID: import_zod.z.string().min(1),
-  FIREBASE_STORAGE_BUCKET: import_zod.z.string().min(1),
-  FIREBASE_MESSAGING_SENDER_ID: import_zod.z.string().min(1),
-  FIREBASE_APP_ID: import_zod.z.string().min(1),
-  FIREBASE_MEASUREMENT_ID: import_zod.z.string().min(1),
-  REDRIVE_OWNER_ID: import_zod.z.string().min(1),
-  REDRIVE_TOKEN: import_zod.z.string().min(1),
-  PORT: import_zod.z.string().min(1)
+  // FIREBASE_API_KEY: z.string().min(1),
+  // FIREBASE_AUTH_DOMAIN: z.string().min(1),
+  // FIREBASE_DATABASE_URL: z.string().min(1),
+  // FIREBASE_PROJECT_ID: z.string().min(1),
+  // FIREBASE_STORAGE_BUCKET: z.string().min(1),
+  // FIREBASE_MESSAGING_SENDER_ID: z.string().min(1),
+  // FIREBASE_APP_ID: z.string().min(1),
+  // FIREBASE_MEASUREMENT_ID: z.string().min(1),
+  // REDRIVE_OWNER_ID: z.string().min(1),
+  // REDRIVE_TOKEN: z.string().min(1),
+  PORT: import_zod.z.coerce.number().default(8080)
 });
 var _env = envSchema.safeParse(process.env);
 if (!_env.success) {
