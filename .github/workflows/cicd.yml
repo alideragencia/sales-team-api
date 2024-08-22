@@ -23,10 +23,14 @@ jobs:
       - name: Build
         run: npm run build --if-present
 
+      - name: Create ZIP excluding node_modules
+        run: |
+          zip -r build.zip . -x "node_modules/*"
+
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v2
         with:
           app-name: 'Redrive-API'
-          package: .
+          package: './build.zip'
           publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
