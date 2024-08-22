@@ -1,0 +1,25 @@
+# EditorConfig is a file format and collection of text editor plugins for maintaining consistent coding styles between different editors and IDEs.
+
+# Top-most EditorConfig file
+root = true
+
+# Indentation settings
+[*]
+indent_style = space
+indent_size = 2
+
+# End of line settings
+[*.{js,ts}]
+end_of_line = lf
+
+# Encoding settings
+[*.{html,css,js,ts}]
+charset = utf-8
+
+# Trim trailing whitespace
+[*.{html,css,js,ts}]
+trim_trailing_whitespace = true
+
+# Insert final newline
+[*.{html,css,js,ts}]
+insert_final_newline = true

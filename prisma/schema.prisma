@@ -1,0 +1,88 @@
+datasource db {
+  provider = "mongodb"
+  url      = "mongodb+srv://development:L2BtoIgd1kDaJ4Y2@development.kjiiu.mongodb.net/redrive-queue"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum InstagramQueueTaskStatus {
+  WAITING
+  PENDING
+  RUNNING
+  // STOPPED
+  FINISHED
+  FAILED
+}
+
+enum InstagramQueueTaskType {
+  LIKES
+  COMMENTS
+  FOLLOWERS
+}
+
+enum InstagramQueueTaskLogEvent {
+  SEARCH_HALTED
+  FINISHED_SEARCH
+}
+
+model InstagramQueueTaskLog {
+  id    String                     @id @default(auto()) @map("_id") @db.ObjectId
+  event InstagramQueueTaskLogEvent
+
+  leads Int?
+
+  timestamp DateTime @default(now())
+
+  InstagramQueueTask   InstagramQueueTask? @relation(fields: [instagramQueueTaskId], references: [id])
+  instagramQueueTaskId String?             @db.ObjectId
+}
+
+model InstagramQueueTask {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  arg    String
+  batch  String
+  tags   String[]
+  status InstagramQueueTaskStatus @default(WAITING)
+  type   InstagramQueueTaskType
+
+  leads Int?
+
+  logs InstagramQueueTaskLog[]
+
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  finishedAt DateTime?
+}
+
+model Lead {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  batch String
+
+  tags String[]
+
+  firstname String
+  lastname  String?
+
+  instagram String
+
+  mobilephone String?
+  phone       String?
+
+  email String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model RedriveAuth {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  token String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
