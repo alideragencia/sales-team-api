@@ -1,7 +1,7 @@
 {
   "name": "redrive-instagram-scrapper-api",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "dist/server.cjs",
   "repository": "git@github.com:alideragencia/redrive-instagram-scrapper-api.git",
   "author": "Lucas0230 <lucas.eduardo.schubert@gmail.com>",
   "license": "MIT",
