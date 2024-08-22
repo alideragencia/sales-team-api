@@ -13,6 +13,7 @@ jobs:
   build_and_deploy:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout Source
       - uses: actions/checkout@v4
 
       - name: Set up Node.js version
