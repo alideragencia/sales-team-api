@@ -14,4 +14,6 @@ export interface ILeadsRepository {
 
     getByContactData({ email, phone, mobilephone }): Promise<Lead | null>
 
+    update(id: string, data: Partial<Lead>): Promise<void>
+
 }

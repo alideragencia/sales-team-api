@@ -17,6 +17,7 @@ export type RedriveLead = {
     tags: string[]
     email?: string
     instagram: string
+    biography?: string
 
     createdAt: Timestamp
     updatedAt: Timestamp

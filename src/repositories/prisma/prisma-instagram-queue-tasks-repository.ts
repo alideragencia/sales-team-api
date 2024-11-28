@@ -1,20 +1,23 @@
 import { prisma } from "@/services/database";
 import { IInstagramQueueTasksRepository } from "../instagram-queue-tasks-repository";
-import { InstagramQueueTask, InstagramQueueTaskStatus } from "@prisma/client";
+import { InstagramScrappingTask, InstagramScrappingTaskStatus } from "@prisma/client";
 
 
 export class PrismaInstagramQueueTasksRepository implements IInstagramQueueTasksRepository {
 
+    async create(data: Pick<InstagramScrappingTask, 'arg' | 'batch' | 'type' | 'tags'>) {
 
+        const tasks = await prisma.instagramScrappingTask.create({
+            data: { ...data, isAssignedToSalesTeam: true }
+        });
+        return tasks;
 
-    async getByStatus(status: InstagramQueueTaskStatus | InstagramQueueTaskStatus[]) {
+    }
 
-        if (typeof status == 'string') {
-            const tasks = await prisma.instagramQueueTask.findMany({ where: { status }, include: { logs: true } });
-            return tasks;
-        }
-        const tasks = await prisma.instagramQueueTask.findMany({
-            where: { OR: status.map(status => ({ status })) },
+    async getByStatus(status: InstagramScrappingTaskStatus | InstagramScrappingTaskStatus[]) {
+
+        const tasks = await prisma.instagramScrappingTask.findMany({
+            where: typeof status == 'string' ? { status } : ({ OR: status.map(status => ({ status })) }),
             include: {
                 logs: true
             }
@@ -23,16 +26,56 @@ export class PrismaInstagramQueueTasksRepository implements IInstagramQueueTasks
 
     }
 
-    async update(id: string, data: Partial<InstagramQueueTask>) {
-        await prisma.instagramQueueTask.update({ where: { id }, data });
+    async update(id: string, data: Partial<InstagramScrappingTask>) {
+        await prisma.instagramScrappingTask.update({ where: { id }, data });
     }
 
-    async updateByArg(arg: string, data: Partial<InstagramQueueTask>) {
-        await prisma.instagramQueueTask.updateMany({ where: { arg }, data });
+    async updateByArg(arg: string, data: Partial<InstagramScrappingTask>) {
+        await prisma.instagramScrappingTask.updateMany({ where: { arg }, data });
     }
 
     async getByArg(arg: string) {
-        const task = await prisma.instagramQueueTask.findFirst({ where: { arg } });
+        const task = await prisma.instagramScrappingTask.findFirst({ where: { arg } });
         return task;
     }
+
+    async getByBatch(batch: string) {
+        const tasks = await prisma.instagramScrappingTask.findMany({ where: { batch } });
+        return tasks;
+    }
+
+    async getBatches({ isAssignedToSalesTeam }: { isAssignedToSalesTeam?: boolean } = { isAssignedToSalesTeam: false }) {
+
+        const where = isAssignedToSalesTeam ? { isAssignedToSalesTeam: true } : {}
+
+        const batches = await prisma.instagramScrappingTask.findMany({
+            distinct: ['batch'],
+            orderBy: { createdAt: 'desc' },
+            select: {
+                batch: true,
+            },
+            where: where
+        })
+
+        return batches.map(b => b.batch);
+    }
+
+    async getFailedTasksToVerify() {
+
+        const tasks = await prisma.instagramScrappingTask.findMany({
+            where: {
+                status: 'FAILED',
+                logs: {
+                    none: {
+                        event: 'FAILURE_CHECK'
+                    }
+                },
+                isAssignedToSalesTeam: true
+            }
+        });
+
+        return tasks
+
+    }
+
 }

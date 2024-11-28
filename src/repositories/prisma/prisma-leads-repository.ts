@@ -27,4 +27,13 @@ export class PrismaLeadsRepository implements ILeadsRepository {
 
         return await prisma.lead.findFirst({ where })
     }
+
+    async update(id: string, data: Omit<Lead, "id" | "createdAt" | "updatedAt">): Promise<void> {
+
+        console.log({ id, data })
+        await prisma.lead.update({
+            where: { id },
+            data: data,
+        })
+    }
 }

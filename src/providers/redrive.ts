@@ -1,18 +1,14 @@
-import { collection, getDocs, limit, query, where } from "firebase/firestore";
+import { collection, getCountFromServer, getDocs, limit, orderBy, query, where } from "firebase/firestore";
 import { RedriveInstagramQueueTask } from "@/types/redrive-instagram-queue";
-import { firestore } from "@/services/redrive";
+import { app, firestore } from "@/services/redrive";
 import axios, { AxiosInstance } from "axios";
 import { prisma } from "@/services/database";
 import { RedriveLead } from "@/types/redrive-lead";
+import { InstagramQueueTask } from "@prisma/client";
 
 type AddPostToQueueProps = {
     arg: string
     tags: string[]
-    post: {
-        id: string
-        biography: string
-        profile_pic_url: string
-    }
 }
 
 export class RedriveProvider {
@@ -51,9 +47,6 @@ export class RedriveProvider {
         if (this.token) return;
 
         const auth = await prisma.redriveAuth.findFirst();
-
-        console.log(`Has Auth`)
-        console.log(auth)
 
         if (!auth) {
             const { token } = await this.login();
@@ -98,25 +91,17 @@ export class RedriveProvider {
 
     async login() {
 
-        console.log('LOGIN ----')
-
         const { data } = await axios.post(`https://www.googleapis.com/identitytoolkit/v3/relyingparty/verifyPassword?key=AIzaSyA7inINbcgTHYrKPb1mEpZ3LIb3dMAzI_k`, {
             "email": "diogo.alan@v4company.com",
             "password": "LWA644*yzY9auQH",
             "returnSecureToken": true
         })
 
-        console.log(`New token =>`)
-        console.log(data.idToken)
-
         return { token: data.idToken }
-
     }
 
     async getTaskByArg(arg: string) {
         return await this.tryMultipleTimes(async () => {
-
-            console.log('Fetching Instagram Task By Arg!')
 
             const ref = collection(firestore, 'instagram-queue');
             if (!ref) throw new Error('cannot find instagram-queue collection on firestore');
@@ -127,6 +112,7 @@ export class RedriveProvider {
             )
 
             const snapshot = await getDocs(q);
+
             const data = snapshot.docs.map(doc => ({ ...doc.data(), doc: doc.id })) as RedriveInstagramQueueTask[];
 
             return data[0];
@@ -142,7 +128,11 @@ export class RedriveProvider {
         }, { attempts: 2 })
     }
 
-    async addPostToQueue({ arg, tags, post }: AddPostToQueueProps) {
+    async addPostToQueue({ arg, tags }: AddPostToQueueProps) {
+
+        const post = await this.getPostDataById(arg);
+        if (!post) throw new Error(`cannot find ${arg} in redrive`);
+
         return await this.tryMultipleTimes(async () => {
             await this.initialize();
             const { data } = await this.instance.post('/insta-scrapper-post-likes', {
@@ -155,6 +145,7 @@ export class RedriveProvider {
                     "profile_pic_url": post.profile_pic_url
                 }
             })
+            console.log(`✅ Post (${arg}) successfully add to redrive queue!`)
             return data;
         }, { attempts: 2 })
     }
@@ -179,19 +170,54 @@ export class RedriveProvider {
         }, { attempts: 2 })
     }
 
-    async getLeadsByArg(arg: string) {
+    async getLeadsByInstagram(instagram: string) {
 
         const ref = collection(firestore, 'crm-leads');
         if (!ref) throw new Error('cannot find leads collection on firestore');
         const q = query(ref,
-            where("leadOwner", "==", process.env.REDRIVE_OWNER_ID),
-            where("tags", "array-contains", arg)
+            where("instagram", "==", instagram)
         )
 
         const snapshot = await getDocs(q);
         const data = snapshot.docs.map(doc => ({ ...doc.data(), doc: doc.id }))
 
         return data as RedriveLead[]
+
+    }
+
+    async getLeadsByArg(arg: string) {
+
+        const ref = collection(firestore, 'crm-leads');
+        if (!ref) throw new Error('cannot find leads collection on firestore');
+
+        const q = query(ref,
+            where("leadOwner", "==", process.env.REDRIVE_OWNER_ID),
+            where("tags", "array-contains", arg),
+        )
+
+        const snapshot = await getDocs(q);
+
+        const data = snapshot.docs.map(doc => ({ ...doc.data(), doc: doc.id }))
+
+        return data as RedriveLead[]
+
+    }
+
+    async getPendingOrScrapingInstagramTasks() {
+
+        const ref = collection(firestore, 'instagram-queue');
+        if (!ref) throw new Error('cannot find instagram-queue collection on firestore');
+
+        const q = query(ref,
+            where("status", "in", ["scraping", "pending"]),
+            where("owner", "==", process.env.REDRIVE_OWNER_ID),
+        )
+
+        const snapshot = await getDocs(q);
+        const data = snapshot.docs.map(doc => doc.data()) as InstagramQueueTask[];
+
+        return data;
+
 
     }
 

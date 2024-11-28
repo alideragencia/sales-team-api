@@ -1,6 +1,6 @@
 datasource db {
   provider = "mongodb"
-  url      = "mongodb+srv://development:L2BtoIgd1kDaJ4Y2@development.kjiiu.mongodb.net/redrive-queue"
+  url      = env("DATABASE_URL")
 }
 
 generator client {
@@ -8,60 +8,69 @@ generator client {
   binaryTargets = ["native", "debian-openssl-1.1.x"]
 }
 
-enum InstagramQueueTaskStatus {
+enum InstagramScrappingTaskStatus {
   WAITING
   PENDING
   RUNNING
-  // STOPPED
   FINISHED
   FAILED
 }
 
-enum InstagramQueueTaskType {
+enum InstagramScrappingTaskType {
   LIKES
   COMMENTS
   FOLLOWERS
 }
 
-enum InstagramQueueTaskLogEvent {
+enum InstagramScrappingTaskLogEvent {
   SEARCH_HALTED
   FINISHED_SEARCH
+  FAILURE_CHECK
 }
 
-model InstagramQueueTaskLog {
-  id    String                     @id @default(auto()) @map("_id") @db.ObjectId
-  event InstagramQueueTaskLogEvent
+model InstagramScrappingTaskLog {
+  id    String                         @id @default(auto()) @map("_id") @db.ObjectId
+  event InstagramScrappingTaskLogEvent
 
   leads Int?
 
   timestamp DateTime @default(now())
 
-  InstagramQueueTask   InstagramQueueTask? @relation(fields: [instagramQueueTaskId], references: [id])
-  instagramQueueTaskId String?             @db.ObjectId
+  instagramScrappingTask   InstagramScrappingTask? @relation(fields: [instagramScrappingTaskId], references: [id])
+  instagramScrappingTaskId String?                 @db.ObjectId
+
+  @@map("instagramscrappingtasklogs")
 }
 
-model InstagramQueueTask {
+model InstagramScrappingTask {
   id String @id @default(auto()) @map("_id") @db.ObjectId
 
   arg    String
   batch  String
   tags   String[]
-  status InstagramQueueTaskStatus @default(WAITING)
-  type   InstagramQueueTaskType
+  status InstagramScrappingTaskStatus @default(WAITING)
+  type   InstagramScrappingTaskType
 
   leads Int?
 
-  logs InstagramQueueTaskLog[]
+  logs InstagramScrappingTaskLog[]
+
+  isAssignedToSalesTeam Boolean
 
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
   finishedAt DateTime?
+
+  @@map("instagramscrappingtasks")
 }
+
+// LEADS
 
 model Lead {
   id String @id @default(auto()) @map("_id") @db.ObjectId
 
   batch String
+  arg   String
 
   tags String[]
 
@@ -75,10 +84,15 @@ model Lead {
 
   email String?
 
+  isLeadQualified Boolean?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@map("leads")
 }
 
+// REDRIVE AUTHENTICATION
 model RedriveAuth {
   id String @id @default(auto()) @map("_id") @db.ObjectId
 
@@ -86,4 +100,40 @@ model RedriveAuth {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@map("redriveauth")
+}
+
+// CRON JOBS - TASKS
+
+enum TaskStatus {
+  FINISHED
+  WAITING
+  PENDING
+  STOPPED
+  ERROR
+  CANCELLED
+  RUNNING
+}
+
+enum TaskKey {
+  HANDLE_POSTS_BY_PROFILE_ON_APIFY
+}
+
+model Task {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  key TaskKey
+
+  data Json
+
+  status TaskStatus @default(WAITING)
+
+  runAt DateTime
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([key])
+  @@map("tasks")
 }

@@ -1,16 +1,14 @@
-import { AddInstagramTaskToRedriveQueue } from "./add-instagram-task-to-redrive-queue";
-import { RedriveProvider } from "@/providers/redrive-provider";
+import { RedriveProvider } from "@/providers/redrive";
 import { IInstagramQueueTasksRepository } from "@/repositories/instagram-queue-tasks-repository";
-import { prisma } from "@/services/database";
 import { InstagramQueueTaskLogEvent } from "@prisma/client";
+import { CreateLeadUseCase } from "../leads/create-lead";
 
-
-
-export class HandleInstagramQueueUseCase {
+export class HandleInstagramScrapingTasksUseCase {
 
     constructor(
         private redrive: RedriveProvider,
-        private tasks: IInstagramQueueTasksRepository
+        private tasks: IInstagramQueueTasksRepository,
+        private createLeadUseCase: CreateLeadUseCase,
     ) { }
 
     async execute() {
@@ -23,13 +21,13 @@ export class HandleInstagramQueueUseCase {
             "ADICIONADAS": 0
         };
 
-        const tasks = await this.tasks.getByStatus(['RUNNING', 'PENDING']);
-
-        console.log(`Tasks Pending or Running => ${tasks.length}`)
+        const tasks = (await this.tasks.getByStatus(['RUNNING', 'PENDING'])).slice(0, 10);
 
         for (let task of tasks) {
 
             const t = await this.redrive.getTaskByArg(task.arg);
+
+            await new Promise(r => setTimeout(r, 250));
 
             const finish = async () => {
                 await this.tasks.update(task.id, {
@@ -44,6 +42,27 @@ export class HandleInstagramQueueUseCase {
                         }
                     }
                 });
+
+                const leads = await this.redrive.getLeadsByArg(task.arg);
+
+                await Promise.all(leads.map(async (lead) => {
+
+                    await this.createLeadUseCase.execute({
+                        batch: task.batch,
+                        arg: task.arg,
+                        lead: {
+                            email: lead.email,
+                            firstname: lead.firstname,
+                            lastname: lead.lastname,
+                            instagram: lead.instagram,
+                            mobilephone: lead.mobilephone,
+                            phone: lead.phone,
+                            tags: lead.tags
+                        }
+                    })
+
+                }))
+
                 LOGS["FINALIZADAS"]++;
             }
 
@@ -67,25 +86,54 @@ export class HandleInstagramQueueUseCase {
 
             }
 
+            const error = async () => {
+
+                await this.tasks.update(task.id, { status: 'FAILED' });
+
+                const leads = await this.redrive.getLeadsByArg(task.arg);
+
+                await Promise.all(leads.map(async (lead) => {
+
+                    await this.createLeadUseCase.execute({
+                        batch: task.batch,
+                        arg: task.arg,
+                        lead: {
+                            email: lead.email,
+                            firstname: lead.firstname,
+                            lastname: lead.lastname,
+                            instagram: lead.instagram,
+                            mobilephone: lead.mobilephone,
+                            phone: lead.phone,
+                            tags: lead.tags
+                        }
+                    })
+
+                }))
+
+
+            }
+
             if (t.status == 'pending') {
                 LOGS['ESPERANDO']++
                 continue
             }
 
-            if (t.status == 'scraping') LOGS['EXECUTANDO']++;
+            if (t.status == 'scraping' || t.status == 'paused') {
+                LOGS['EXECUTANDO']++;
 
-            if (t.status == 'scraping' && task.status == 'RUNNING') continue;
-            if ((t.status == 'scraping') && task.status != 'RUNNING') {
+                if (task.status == 'RUNNING') continue;
+
                 await this.tasks.update(task.id, { status: 'RUNNING' });
                 continue;
-            };
+
+            }
 
             if (t.status == 'stopped_by_system') {
-                await this.tasks.update(task.id, { status: 'FAILED' });
+                await error();
                 continue;
             }
 
-            if (t.status == 'complete') {
+            if (t.status == 'complete' || t.status == 'stopped_by_user') {
 
                 // 20% de Coleta de Leads
                 const hasGoodPercentageOfLeads = (t.totalLeads / t.followersCount) > 0.2;
@@ -120,18 +168,37 @@ export class HandleInstagramQueueUseCase {
 
         }
 
-        const MAX_ITENS_ON_REDRIVE_QUEUE = 2;
+
+        const MAX_ITENS_ON_REDRIVE_QUEUE = 3;
 
         const remaining = await this.tasks.getByStatus(['RUNNING', 'PENDING']);
         if (remaining.length >= MAX_ITENS_ON_REDRIVE_QUEUE) return LOGS;
 
-        const tasksToAdd = await this.tasks.getByStatus('WAITING');
+        const distributed = await (async () => {
 
-        const addInstagramTaskToRedriveQueueUseCase = new AddInstagramTaskToRedriveQueue(this.redrive, this.tasks);
+            const tasks = await this.tasks.getByStatus('WAITING');
+            const max = MAX_ITENS_ON_REDRIVE_QUEUE - remaining.length;
 
-        for (let task of tasksToAdd.slice(0, MAX_ITENS_ON_REDRIVE_QUEUE - remaining.length)) {
-            await addInstagramTaskToRedriveQueueUseCase.execute({ ...task })
-            LOGS['ADICIONADAS']++;
+            return tasks.slice(0, max)
+
+        })();
+
+
+        for (let task of distributed) {
+            try {
+
+                LOGS['ADICIONADAS']++;
+
+                const data = await this.redrive.addPostToQueue({ ...task, tags: [task.batch, task.arg] })
+
+                if (!data?.ack) {
+                    await this.tasks.updateByArg(task.arg, { status: 'FAILED', })
+                    throw new Error(`error adding task in redrive queue => ${JSON.stringify(data)}`)
+                }
+
+            } catch (e) {
+
+            }
         }
 
         return LOGS;
