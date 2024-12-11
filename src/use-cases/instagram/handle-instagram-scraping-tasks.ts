@@ -129,6 +129,24 @@ export class HandleInstagramScrapingTasksUseCase {
             }
 
             if (t.status == 'stopped_by_system') {
+
+                //@ts-ignore
+                let logs = task.logs as { event: InstagramQueueTaskLogEvent, data: { leads: number } }[];
+                logs = logs?.length ? logs.filter(l => l.event == "STOPPED_BY_SYSTEM") : [];
+
+                if (!logs.length) {
+                    await this.tasks.update(task.id, {
+                        //@ts-ignore
+                        logs: {
+                            create: {
+                                event: 'STOPPED_BY_SYSTEM',
+                                leads: Number(t.totalLeads)
+                            }
+                        }
+                    });
+                    continue;
+                }
+
                 await error();
                 continue;
             }

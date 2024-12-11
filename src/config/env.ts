@@ -5,6 +5,8 @@ dotenv.config({ path: path.resolve(process.cwd(), `.env.${process.env.NODE_ENV}`
 
 import { z } from 'zod';
 
+console.log(process.env)
+
 const envSchema = z.object({
   FIREBASE_API_KEY: z.string().min(1),
   FIREBASE_AUTH_DOMAIN: z.string().min(1),

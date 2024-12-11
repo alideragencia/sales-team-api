@@ -30,13 +30,15 @@ var prisma = new import_client.PrismaClient();
 
 // src/repositories/prisma/prisma-instagram-queue-tasks-repository.ts
 var PrismaInstagramQueueTasksRepository = class {
+  async create(data) {
+    const tasks = await prisma.instagramScrappingTask.create({
+      data: { ...data, isAssignedToSalesTeam: true }
+    });
+    return tasks;
+  }
   async getByStatus(status) {
-    if (typeof status == "string") {
-      const tasks2 = await prisma.instagramQueueTask.findMany({ where: { status }, include: { logs: true } });
-      return tasks2;
-    }
-    const tasks = await prisma.instagramQueueTask.findMany({
-      where: { OR: status.map((status2) => ({ status: status2 })) },
+    const tasks = await prisma.instagramScrappingTask.findMany({
+      where: typeof status == "string" ? { status } : { OR: status.map((status2) => ({ status: status2 })) },
       include: {
         logs: true
       }
@@ -44,14 +46,44 @@ var PrismaInstagramQueueTasksRepository = class {
     return tasks;
   }
   async update(id, data) {
-    await prisma.instagramQueueTask.update({ where: { id }, data });
+    await prisma.instagramScrappingTask.update({ where: { id }, data });
   }
   async updateByArg(arg, data) {
-    await prisma.instagramQueueTask.updateMany({ where: { arg }, data });
+    await prisma.instagramScrappingTask.updateMany({ where: { arg }, data });
   }
   async getByArg(arg) {
-    const task = await prisma.instagramQueueTask.findFirst({ where: { arg } });
+    const task = await prisma.instagramScrappingTask.findFirst({ where: { arg } });
     return task;
+  }
+  async getByBatch(batch) {
+    const tasks = await prisma.instagramScrappingTask.findMany({ where: { batch } });
+    return tasks;
+  }
+  async getBatches({ isAssignedToSalesTeam } = { isAssignedToSalesTeam: false }) {
+    const where = isAssignedToSalesTeam ? { isAssignedToSalesTeam: true } : {};
+    const batches = await prisma.instagramScrappingTask.findMany({
+      distinct: ["batch"],
+      orderBy: { createdAt: "desc" },
+      select: {
+        batch: true
+      },
+      where
+    });
+    return batches.map((b) => b.batch);
+  }
+  async getFailedTasksToVerify() {
+    const tasks = await prisma.instagramScrappingTask.findMany({
+      where: {
+        status: "FAILED",
+        logs: {
+          none: {
+            event: "FAILURE_CHECK"
+          }
+        },
+        isAssignedToSalesTeam: true
+      }
+    });
+    return tasks;
   }
 };
 // Annotate the CommonJS export names for ESM import in node:

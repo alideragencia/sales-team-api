@@ -25,6 +25,7 @@ enum InstagramScrappingTaskType {
 enum InstagramScrappingTaskLogEvent {
   SEARCH_HALTED
   FINISHED_SEARCH
+  STOPPED_BY_SYSTEM
   FAILURE_CHECK
 }
 
