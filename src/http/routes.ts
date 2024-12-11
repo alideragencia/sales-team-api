@@ -12,20 +12,30 @@ import { exportLeadsToCSV } from "./controllers/export-leads-to-csv";
 import { getLeadsByBatch } from "./controllers";
 import { updateLeadById } from "./controllers/update-lead-by-id";
 import { RedriveProvider } from "@/providers/redrive";
-import { PrismaInstagramQueueTasksRepository } from "@/repositories/prisma/prisma-instagram-queue-tasks-repository";
 
 routes.get('/', async (request: Request, response: Response) => {
 
   return response.status(200).json({ now: new Date().toISOString() });
 })
 
+routes.post('/', async (request: Request, response: Response) => {
+
+  console.log(`BODY +++++++`)
+  console.log(request.body)
+
+  return response.status(200).json({ now: new Date().toISOString() });
+})
+
+
 routes.get('/tasks/:id', async (request: Request, response: Response) => {
   return response.status(200).json(await new RedriveProvider().getTaskByArg(request.params.id));
 })
 
-// routes.get('/leads/:id', async (request: Request, response: Response) => {
-//   return response.status(200).json(await new RedriveProvider().getLeadsByArg(request.params.id));
-// })
+routes.get('/tasks/:id/leads', async (request: Request, response: Response) => {
+  return response.status(200).json(await new RedriveProvider().getLeadsByArg(request.params.id));
+})
+routes.get('/tasks/:id/sales-team-leads', getLeadsByBatch)
+
 
 // Get Instagram Scraping Tasks
 routes.get('/scraping-tasks', getScrapingTasks)

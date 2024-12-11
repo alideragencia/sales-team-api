@@ -89,8 +89,6 @@ var RedriveProvider = class {
     if (this.token)
       return;
     const auth = await prisma.redriveAuth.findFirst();
-    console.log(`Has Auth`);
-    console.log(auth);
     if (!auth) {
       const { token } = await this.login();
       this.token = token;
@@ -127,19 +125,15 @@ var RedriveProvider = class {
     throw new Error("Function failed without error details.");
   }
   async login() {
-    console.log("LOGIN ----");
     const { data } = await import_axios.default.post(`https://www.googleapis.com/identitytoolkit/v3/relyingparty/verifyPassword?key=AIzaSyA7inINbcgTHYrKPb1mEpZ3LIb3dMAzI_k`, {
       "email": "diogo.alan@v4company.com",
       "password": "LWA644*yzY9auQH",
       "returnSecureToken": true
     });
-    console.log(`New token =>`);
-    console.log(data.idToken);
     return { token: data.idToken };
   }
   async getTaskByArg(arg) {
     return await this.tryMultipleTimes(async () => {
-      console.log("Fetching Instagram Task By Arg!");
       const ref = (0, import_firestore2.collection)(firestore, "instagram-queue");
       if (!ref)
         throw new Error("cannot find instagram-queue collection on firestore");
@@ -160,7 +154,10 @@ var RedriveProvider = class {
       return data?.result;
     }, { attempts: 2 });
   }
-  async addPostToQueue({ arg, tags, post }) {
+  async addPostToQueue({ arg, tags }) {
+    const post = await this.getPostDataById(arg);
+    if (!post)
+      throw new Error(`cannot find ${arg} in redrive`);
     return await this.tryMultipleTimes(async () => {
       await this.initialize();
       const { data } = await this.instance.post("/insta-scrapper-post-likes", {
@@ -173,6 +170,7 @@ var RedriveProvider = class {
           "profile_pic_url": post.profile_pic_url
         }
       });
+      console.log(`\u2705 Post (${arg}) successfully add to redrive queue!`);
       return data;
     }, { attempts: 2 });
   }
@@ -196,6 +194,18 @@ var RedriveProvider = class {
         throw new Error();
     }, { attempts: 2 });
   }
+  async getLeadsByInstagram(instagram) {
+    const ref = (0, import_firestore2.collection)(firestore, "crm-leads");
+    if (!ref)
+      throw new Error("cannot find leads collection on firestore");
+    const q = (0, import_firestore2.query)(
+      ref,
+      (0, import_firestore2.where)("instagram", "==", instagram)
+    );
+    const snapshot = await (0, import_firestore2.getDocs)(q);
+    const data = snapshot.docs.map((doc) => ({ ...doc.data(), doc: doc.id }));
+    return data;
+  }
   async getLeadsByArg(arg) {
     const ref = (0, import_firestore2.collection)(firestore, "crm-leads");
     if (!ref)
@@ -207,6 +217,19 @@ var RedriveProvider = class {
     );
     const snapshot = await (0, import_firestore2.getDocs)(q);
     const data = snapshot.docs.map((doc) => ({ ...doc.data(), doc: doc.id }));
+    return data;
+  }
+  async getPendingOrScrapingInstagramTasks() {
+    const ref = (0, import_firestore2.collection)(firestore, "instagram-queue");
+    if (!ref)
+      throw new Error("cannot find instagram-queue collection on firestore");
+    const q = (0, import_firestore2.query)(
+      ref,
+      (0, import_firestore2.where)("status", "in", ["scraping", "pending"]),
+      (0, import_firestore2.where)("owner", "==", process.env.REDRIVE_OWNER_ID)
+    );
+    const snapshot = await (0, import_firestore2.getDocs)(q);
+    const data = snapshot.docs.map((doc) => doc.data());
     return data;
   }
 };

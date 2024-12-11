@@ -24,7 +24,7 @@ export async function getLeadsByBatch(request: Request, response: Response, next
             "holística", "personal", "treinador", "academia", "influencer", "digital", "autoajuda",
             "espiritual", "autoconhecimento", "boutique", "mercearia", "consultora de imagem",
             "estilo", "blogueira", "youtuber", "criador de conteúdo", 'mkt', 'design', 'trafego', 'psicologa', 'fotografa', 'assessoria',
-            "sest senat", "sesi", "print", "designer", "social media", "marketing"
+            "sest senat", "sesi", "print", "designer", "social media", "marketing", "sesi", "sesc", "print", "designer", "marketing", "mecanic", "mecânic", 'contabilidade', "grafic", "desing"
         ];
 
         return response.status(200).json({
