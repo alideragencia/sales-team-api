@@ -34,14 +34,13 @@ routes.get('/tasks/:id', async (request: Request, response: Response) => {
 routes.get('/tasks/:id/leads', async (request: Request, response: Response) => {
   return response.status(200).json(await new RedriveProvider().getLeadsByArg(request.params.id));
 })
-routes.get('/tasks/:id/sales-team-leads', getLeadsByBatch)
-
 
 // Get Instagram Scraping Tasks
 routes.get('/scraping-tasks', getScrapingTasks)
 
 // Create Instagram Scraping Task
 routes.post('/scraping-tasks', createScrapingTasks)
+
 
 // Get Instagram Scraping Tasks Batches
 routes.get('/scraping-tasks-batches', getScrapingTasksBatches)
