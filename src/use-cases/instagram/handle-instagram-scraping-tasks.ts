@@ -27,6 +27,9 @@ export class HandleInstagramScrapingTasksUseCase {
 
             const t = await this.redrive.getTaskByArg(task.arg);
 
+            console.log(`🗒 Checking task ${task.arg}`)
+            console.log(t);
+
             await new Promise(r => setTimeout(r, 250));
 
             const finish = async () => {
@@ -113,7 +116,7 @@ export class HandleInstagramScrapingTasksUseCase {
 
             }
 
-            if (t.status == 'pending') {
+            if (t.status == 'pending' || t.status == 'pending-new') {
                 LOGS['ESPERANDO']++
                 continue
             }
