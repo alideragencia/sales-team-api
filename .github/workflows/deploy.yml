@@ -6,7 +6,7 @@ name: Publish 🚀
 on:
   push:
     branches:
-      - prod
+      - production
   workflow_dispatch:
 
 jobs:
