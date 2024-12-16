@@ -138,6 +138,7 @@ var import_dotenv = __toESM(require("dotenv"), 1);
 var import_path = __toESM(require("path"), 1);
 var import_zod = require("zod");
 import_dotenv.default.config({ path: import_path.default.resolve(process.cwd(), `.env.${process.env.NODE_ENV}`) });
+console.log(process.env);
 var envSchema = import_zod.z.object({
   FIREBASE_API_KEY: import_zod.z.string().min(1),
   FIREBASE_AUTH_DOMAIN: import_zod.z.string().min(1),
@@ -153,13 +154,14 @@ var envSchema = import_zod.z.object({
   APIFY_BASE_URL: import_zod.z.string().min(1),
   APIFY_TOKEN: import_zod.z.string().min(1),
   DATABASE_URL: import_zod.z.string().min(1),
-  PORT: import_zod.z.coerce.number().default(4e3)
+  PORT: import_zod.z.coerce.number().default(8080)
 });
 var _env = envSchema.safeParse(process.env);
 if (!_env.success) {
   console.error("\u274C Invalid environment variables", _env.error.format());
   throw new Error("Invalid environment varibles.");
 }
+console.log(_env.data);
 var env = _env.data;
 
 // src/lib/get-months-ago.ts
@@ -559,6 +561,8 @@ var HandleInstagramScrapingTasksUseCase = class {
     const tasks = (await this.tasks.getByStatus(["RUNNING", "PENDING"])).slice(0, 10);
     for (let task of tasks) {
       const t = await this.redrive.getTaskByArg(task.arg);
+      console.log(`\u{1F5D2} Checking task ${task.arg}`);
+      console.log(t);
       await new Promise((r) => setTimeout(r, 250));
       const finish = async () => {
         await this.tasks.update(task.id, {
@@ -627,7 +631,7 @@ var HandleInstagramScrapingTasksUseCase = class {
           });
         }));
       };
-      if (t.status == "pending") {
+      if (t.status == "pending" || t.status == "pending-new") {
         LOGS["ESPERANDO"]++;
         continue;
       }
@@ -639,6 +643,20 @@ var HandleInstagramScrapingTasksUseCase = class {
         continue;
       }
       if (t.status == "stopped_by_system") {
+        let logs = task.logs;
+        logs = logs?.length ? logs.filter((l) => l.event == "STOPPED_BY_SYSTEM") : [];
+        if (!logs.length) {
+          await this.tasks.update(task.id, {
+            //@ts-ignore
+            logs: {
+              create: {
+                event: "STOPPED_BY_SYSTEM",
+                leads: Number(t.totalLeads)
+              }
+            }
+          });
+          continue;
+        }
         await error();
         continue;
       }
@@ -677,6 +695,8 @@ var HandleInstagramScrapingTasksUseCase = class {
       try {
         LOGS["ADICIONADAS"]++;
         const data = await this.redrive.addPostToQueue({ ...task, tags: [task.batch, task.arg] });
+        console.log(`Adicionou`);
+        console.log(data);
         if (!data?.ack) {
           await this.tasks.updateByArg(task.arg, { status: "FAILED" });
           throw new Error(`error adding task in redrive queue => ${JSON.stringify(data)}`);
@@ -1000,7 +1020,17 @@ async function getLeadsByBatch(request, response, next) {
       "print",
       "designer",
       "social media",
-      "marketing"
+      "marketing",
+      "sesi",
+      "sesc",
+      "print",
+      "designer",
+      "marketing",
+      "mecanic",
+      "mec\xE2nic",
+      "contabilidade",
+      "grafic",
+      "desing"
     ];
     return response.status(200).json({
       data: leads.filter((lead) => {
@@ -1044,8 +1074,16 @@ var routes = (0, import_express.Router)();
 routes.get("/", async (request, response) => {
   return response.status(200).json({ now: (/* @__PURE__ */ new Date()).toISOString() });
 });
+routes.post("/", async (request, response) => {
+  console.log(`BODY +++++++`);
+  console.log(request.body);
+  return response.status(200).json({ now: (/* @__PURE__ */ new Date()).toISOString() });
+});
 routes.get("/tasks/:id", async (request, response) => {
   return response.status(200).json(await new RedriveProvider().getTaskByArg(request.params.id));
+});
+routes.get("/tasks/:id/leads", async (request, response) => {
+  return response.status(200).json(await new RedriveProvider().getLeadsByArg(request.params.id));
 });
 routes.get("/scraping-tasks", getScrapingTasks);
 routes.post("/scraping-tasks", createScrapingTasks);

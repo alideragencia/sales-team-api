@@ -212,6 +212,9 @@ export class HandleInstagramScrapingTasksUseCase {
 
                 const data = await this.redrive.addPostToQueue({ ...task, tags: [task.batch, task.arg] })
 
+                console.log(`Adicionou`)
+                console.log(data)
+
                 if (!data?.ack) {
                     await this.tasks.updateByArg(task.arg, { status: 'FAILED', })
                     throw new Error(`error adding task in redrive queue => ${JSON.stringify(data)}`)

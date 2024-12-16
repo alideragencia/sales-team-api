@@ -37,6 +37,7 @@ var import_dotenv = __toESM(require("dotenv"), 1);
 var import_path = __toESM(require("path"), 1);
 var import_zod = require("zod");
 import_dotenv.default.config({ path: import_path.default.resolve(process.cwd(), `.env.${process.env.NODE_ENV}`) });
+console.log(process.env);
 var envSchema = import_zod.z.object({
   FIREBASE_API_KEY: import_zod.z.string().min(1),
   FIREBASE_AUTH_DOMAIN: import_zod.z.string().min(1),
@@ -52,13 +53,14 @@ var envSchema = import_zod.z.object({
   APIFY_BASE_URL: import_zod.z.string().min(1),
   APIFY_TOKEN: import_zod.z.string().min(1),
   DATABASE_URL: import_zod.z.string().min(1),
-  PORT: import_zod.z.coerce.number().default(4e3)
+  PORT: import_zod.z.coerce.number().default(8080)
 });
 var _env = envSchema.safeParse(process.env);
 if (!_env.success) {
   console.error("\u274C Invalid environment variables", _env.error.format());
   throw new Error("Invalid environment varibles.");
 }
+console.log(_env.data);
 var env = _env.data;
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {

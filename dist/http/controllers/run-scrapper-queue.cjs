@@ -345,6 +345,8 @@ var HandleInstagramScrapingTasksUseCase = class {
     const tasks = (await this.tasks.getByStatus(["RUNNING", "PENDING"])).slice(0, 10);
     for (let task of tasks) {
       const t = await this.redrive.getTaskByArg(task.arg);
+      console.log(`\u{1F5D2} Checking task ${task.arg}`);
+      console.log(t);
       await new Promise((r) => setTimeout(r, 250));
       const finish = async () => {
         await this.tasks.update(task.id, {
@@ -413,7 +415,7 @@ var HandleInstagramScrapingTasksUseCase = class {
           });
         }));
       };
-      if (t.status == "pending") {
+      if (t.status == "pending" || t.status == "pending-new") {
         LOGS["ESPERANDO"]++;
         continue;
       }
@@ -425,6 +427,20 @@ var HandleInstagramScrapingTasksUseCase = class {
         continue;
       }
       if (t.status == "stopped_by_system") {
+        let logs = task.logs;
+        logs = logs?.length ? logs.filter((l) => l.event == "STOPPED_BY_SYSTEM") : [];
+        if (!logs.length) {
+          await this.tasks.update(task.id, {
+            //@ts-ignore
+            logs: {
+              create: {
+                event: "STOPPED_BY_SYSTEM",
+                leads: Number(t.totalLeads)
+              }
+            }
+          });
+          continue;
+        }
         await error();
         continue;
       }
@@ -463,6 +479,8 @@ var HandleInstagramScrapingTasksUseCase = class {
       try {
         LOGS["ADICIONADAS"]++;
         const data = await this.redrive.addPostToQueue({ ...task, tags: [task.batch, task.arg] });
+        console.log(`Adicionou`);
+        console.log(data);
         if (!data?.ack) {
           await this.tasks.updateByArg(task.arg, { status: "FAILED" });
           throw new Error(`error adding task in redrive queue => ${JSON.stringify(data)}`);

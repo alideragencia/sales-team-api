@@ -162,7 +162,17 @@ async function getLeadsByBatch(request, response, next) {
       "print",
       "designer",
       "social media",
-      "marketing"
+      "marketing",
+      "sesi",
+      "sesc",
+      "print",
+      "designer",
+      "marketing",
+      "mecanic",
+      "mec\xE2nic",
+      "contabilidade",
+      "grafic",
+      "desing"
     ];
     return response.status(200).json({
       data: leads.filter((lead) => {
