@@ -1,6 +1,5 @@
 import { RedriveProvider } from "@/providers/redrive";
 import { IInstagramQueueTasksRepository } from "@/repositories/instagram-queue-tasks-repository";
-import { InstagramQueueTaskLogEvent } from "@prisma/client";
 import { CreateLeadUseCase } from "../leads/create-lead";
 
 export class HandleInstagramScrapingTasksUseCase {
@@ -30,9 +29,31 @@ export class HandleInstagramScrapingTasksUseCase {
             console.log(`🗒 Checking task ${task.arg}`)
             console.log(t);
 
+
             await new Promise(r => setTimeout(r, 250));
 
+            const leads = await this.redrive.getLeadsByArg(task.arg);
+
+            await Promise.all(leads.map(async (lead) => {
+
+                await this.createLeadUseCase.execute({
+                    batch: task.batch,
+                    arg: task.arg,
+                    lead: {
+                        email: lead.email,
+                        firstname: lead.firstname,
+                        lastname: lead.lastname,
+                        instagram: lead.instagram,
+                        mobilephone: lead.mobilephone,
+                        phone: lead.phone,
+                        tags: lead.tags
+                    }
+                })
+
+            }))
+
             const finish = async () => {
+
                 await this.tasks.update(task.id, {
                     status: 'FINISHED',
                     leads: Number(t.totalLeads),
@@ -45,26 +66,6 @@ export class HandleInstagramScrapingTasksUseCase {
                         }
                     }
                 });
-
-                const leads = await this.redrive.getLeadsByArg(task.arg);
-
-                await Promise.all(leads.map(async (lead) => {
-
-                    await this.createLeadUseCase.execute({
-                        batch: task.batch,
-                        arg: task.arg,
-                        lead: {
-                            email: lead.email,
-                            firstname: lead.firstname,
-                            lastname: lead.lastname,
-                            instagram: lead.instagram,
-                            mobilephone: lead.mobilephone,
-                            phone: lead.phone,
-                            tags: lead.tags
-                        }
-                    })
-
-                }))
 
                 LOGS["FINALIZADAS"]++;
             }
@@ -117,18 +118,15 @@ export class HandleInstagramScrapingTasksUseCase {
             }
 
             if (t.status == 'pending' || t.status == 'pending-new') {
+                await this.tasks.updateByArg(task.arg, { status: "PENDING" });
                 LOGS['ESPERANDO']++
                 continue
             }
 
             if (t.status == 'scraping' || t.status == 'paused') {
-                LOGS['EXECUTANDO']++;
-
-                if (task.status == 'RUNNING') continue;
-
                 await this.tasks.update(task.id, { status: 'RUNNING' });
+                LOGS['EXECUTANDO']++;
                 continue;
-
             }
 
             if (t.status == 'stopped_by_system') {
@@ -189,7 +187,6 @@ export class HandleInstagramScrapingTasksUseCase {
 
         }
 
-
         const MAX_ITENS_ON_REDRIVE_QUEUE = 3;
 
         const remaining = await this.tasks.getByStatus(['RUNNING', 'PENDING']);
@@ -203,6 +200,8 @@ export class HandleInstagramScrapingTasksUseCase {
             return tasks.slice(0, max)
 
         })();
+
+        console.log(distributed)
 
 
         for (let task of distributed) {
@@ -221,7 +220,9 @@ export class HandleInstagramScrapingTasksUseCase {
                 }
 
             } catch (e) {
-
+                console.log(`❌ Error`)
+                //@ts-ignore
+                console.log(e.response.data)
             }
         }
 

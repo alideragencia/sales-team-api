@@ -39,6 +39,7 @@ export class CreateLeadUseCase {
             mobilephone: lead.mobilephone || null,
             phone: lead.phone || null,
             tags: lead.tags,
+            isLeadQualified: null
         })
 
     }

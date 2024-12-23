@@ -38,6 +38,4 @@ if (!_env.success) {
   console.error('❌ Invalid environment variables', _env.error.format());
   throw new Error('Invalid environment varibles.');
 }
-
-console.log(_env.data)
 export const env = _env.data;

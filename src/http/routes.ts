@@ -35,6 +35,12 @@ routes.get('/tasks/:id/leads', async (request: Request, response: Response) => {
   return response.status(200).json(await new RedriveProvider().getLeadsByArg(request.params.id));
 })
 
+
+routes.get('/instagram/:instagram', async (request: Request, response: Response) => {
+  return response.status(200).json(await new RedriveProvider().getLeadsByInstagram(request.params.instagram));
+})
+
+
 // Get Instagram Scraping Tasks
 routes.get('/scraping-tasks', getScrapingTasks)
 

@@ -6,6 +6,7 @@ type Props = {
     tags: string[]
     type: 'LIKES_ON_POST'
     batch: string
+    isAssignedToSalesTeam?: boolean
 }
 
 export class CreateInstagramScrapingTaskUseCase {
@@ -14,7 +15,7 @@ export class CreateInstagramScrapingTaskUseCase {
         private repository: IInstagramQueueTasksRepository
     ) { }
 
-    async execute({ arg, tags, type, batch }: Props) {
+    async execute({ arg, tags, type, batch, isAssignedToSalesTeam }: Props) {
 
         if (type == 'LIKES_ON_POST') {
 
@@ -26,6 +27,7 @@ export class CreateInstagramScrapingTaskUseCase {
                 type: 'LIKES',
                 batch: batch,
                 tags: [],
+                isAssignedToSalesTeam: isAssignedToSalesTeam == undefined || true
             })
 
             return data;

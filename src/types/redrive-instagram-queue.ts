@@ -1,6 +1,6 @@
 
 
-export type InstagramQueueStatus = 'pending' | 'scraping' | 'complete' | 'stopped_by_system' | 'paused'
+export type InstagramQueueStatus = 'pending' | 'scraping' | 'complete' | 'stopped_by_system' | 'paused' | 'pending-new'
 export type InstagramQueueAction = 'followers'
 
 export interface Timestamp {

@@ -6,7 +6,8 @@ export class PrismaLeadsRepository implements ILeadsRepository {
 
     async getByBatch(batch: string): Promise<Lead[]> {
         const leads = await prisma.lead.findMany({
-            where: { batch: batch }
+            where: { batch: batch },
+            orderBy: { createdAt: "asc" }
         })
         return leads;
     }
@@ -30,7 +31,6 @@ export class PrismaLeadsRepository implements ILeadsRepository {
 
     async update(id: string, data: Omit<Lead, "id" | "createdAt" | "updatedAt">): Promise<void> {
 
-        console.log({ id, data })
         await prisma.lead.update({
             where: { id },
             data: data,

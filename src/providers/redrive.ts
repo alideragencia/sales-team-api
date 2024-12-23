@@ -4,7 +4,8 @@ import { app, firestore } from "@/services/redrive";
 import axios, { AxiosInstance } from "axios";
 import { prisma } from "@/services/database";
 import { RedriveLead } from "@/types/redrive-lead";
-import { InstagramQueueTask } from "@prisma/client";
+import { InstagramScrappingTask } from "@prisma/client";
+
 
 type AddPostToQueueProps = {
     arg: string
@@ -93,7 +94,7 @@ export class RedriveProvider {
 
         const { data } = await axios.post(`https://www.googleapis.com/identitytoolkit/v3/relyingparty/verifyPassword?key=AIzaSyA7inINbcgTHYrKPb1mEpZ3LIb3dMAzI_k`, {
             "email": "diogo.alan@v4company.com",
-            "password": "LWA644*yzY9auQH",
+            "password": "M*E!FY7HptWZK@Q",
             "returnSecureToken": true
         })
 
@@ -214,7 +215,7 @@ export class RedriveProvider {
         )
 
         const snapshot = await getDocs(q);
-        const data = snapshot.docs.map(doc => doc.data()) as InstagramQueueTask[];
+        const data = snapshot.docs.map(doc => doc.data()) as InstagramScrappingTask[];
 
         return data;
 

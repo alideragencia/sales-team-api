@@ -36,8 +36,6 @@ export class ExportLeadsToCSVUseCase {
 
         const leads = await this.repository.getByBatch(batch);
 
-        console.log(leads.length)
-
         const headers = ['ID', 'Post', 'Nome', 'Sobrenome', 'Instagram', 'Telefone', 'Link do Whatsapp', 'Email', 'Criado em'].join(',');
 
         const rows = leads
@@ -45,7 +43,7 @@ export class ExportLeadsToCSVUseCase {
 
                 if (!lead.phone && !lead.mobilephone) return false
 
-                const name = (lead.firstname + lead.lastname).normalize('NFD').replace(/[\u0300-\u036f]/g, "").toLowerCase();
+                const name = (lead.firstname + lead.lastname + lead.instagram).normalize('NFD').replace(/[\u0300-\u036f]/g, "").toLowerCase();
                 const hasNegativeKeyWord = useNegativeKeyWords ? NEGATIVE_KEY_WORDS.find(k => name.includes(k)) : false;
                 if (hasNegativeKeyWord) {
                     return false

@@ -1,19 +1,21 @@
-import { InstagramQueueTask, InstagramQueueTaskStatus } from "@prisma/client";
+import { InstagramScrappingTask, InstagramScrappingTaskStatus } from "@prisma/client";
+
+
 
 export interface IInstagramQueueTasksRepository {
 
-    create: (data: Pick<InstagramQueueTask, 'arg' | 'type' | 'batch' | 'tags'>) => Promise<InstagramQueueTask>
+    create: (data: Pick<InstagramScrappingTask, 'arg' | 'type' | 'batch' | 'tags', 'isAssignedToSalesTeam'>) => Promise<InstagramQueueTask>
 
-    getByStatus: (status: InstagramQueueTaskStatus | InstagramQueueTaskStatus[]) => Promise<InstagramQueueTask[]>
+    getByStatus: (status: InstagramScrappingTaskStatus | InstagramScrappingTaskStatus[]) => Promise<InstagramScrappingTask[]>
 
-    update: (id: string, data: Partial<InstagramQueueTask>) => Promise<void>
+    update: (id: string, data: Partial<InstagramScrappingTask>) => Promise<void>
 
-    updateByArg: (arg: string, data: Partial<InstagramQueueTask>) => Promise<void>
+    updateByArg: (arg: string, data: Partial<InstagramScrappingTask>) => Promise<void>
 
-    getByArg: (arg: string) => Promise<InstagramQueueTask | null>
-    getByBatch: (batch: string) => Promise<InstagramQueueTask[] | null>
+    getByArg: (arg: string) => Promise<InstagramScrappingTask | null>
+    getByBatch: (batch: string) => Promise<InstagramScrappingTask[] | null>
     getBatches: ({ isAssignedToSalesTeam }: { isAssignedToSalesTeam?: boolean }) => Promise<string[]>
 
-    getFailedTasksToVerify: () => Promise<InstagramQueueTask[] | null>
+    getFailedTasksToVerify: () => Promise<InstagramScrappingTask[] | null>
 
 }
