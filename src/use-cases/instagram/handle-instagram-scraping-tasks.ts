@@ -123,13 +123,13 @@ export class HandleInstagramScrapingTasksUseCase {
                 continue
             }
 
-            if (t.status == 'scraping' || t.status == 'paused') {
+            if (t.status == 'scraping') {
                 await this.tasks.update(task.id, { status: 'RUNNING' });
                 LOGS['EXECUTANDO']++;
                 continue;
             }
 
-            if (t.status == 'stopped_by_system') {
+            if (t.status == 'stopped_by_system' || t.status == 'paused') {
 
                 //@ts-ignore
                 let logs = task.logs as { event: InstagramQueueTaskLogEvent, data: { leads: number } }[];
@@ -215,14 +215,27 @@ export class HandleInstagramScrapingTasksUseCase {
                 console.log(data)
 
                 if (!data?.ack) {
+
+
+                    console.log(await this.redrive.getLeadsByArg(task.arg))
+
                     await this.tasks.updateByArg(task.arg, { status: 'FAILED', })
                     throw new Error(`error adding task in redrive queue => ${JSON.stringify(data)}`)
                 }
 
             } catch (e) {
                 console.log(`❌ Error`)
-                //@ts-ignore
-                console.log(e.response.data)
+
+
+                if (e?.response?.data) {
+                    //@ts-ignore
+                    console.log(e.response.data)
+                } else if (e?.response) {
+                    //@ts-ignore
+                    console.log(e?.response)
+                } else {
+                    console.log(e)
+                }
             }
         }
 

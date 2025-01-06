@@ -27,7 +27,7 @@ var CreateInstagramScrapingTaskUseCase = class {
   constructor(repository) {
     this.repository = repository;
   }
-  async execute({ arg, tags, type, batch }) {
+  async execute({ arg, tags, type, batch, isAssignedToSalesTeam }) {
     if (type == "LIKES_ON_POST") {
       const hasPostOnDatabase = await this.repository.getByArg(arg);
       if (hasPostOnDatabase)
@@ -36,7 +36,8 @@ var CreateInstagramScrapingTaskUseCase = class {
         arg,
         type: "LIKES",
         batch,
-        tags: []
+        tags: [],
+        isAssignedToSalesTeam: isAssignedToSalesTeam == void 0 || true
       });
       return data;
     }

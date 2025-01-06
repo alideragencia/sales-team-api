@@ -127,7 +127,7 @@ var RedriveProvider = class {
   async login() {
     const { data } = await import_axios.default.post(`https://www.googleapis.com/identitytoolkit/v3/relyingparty/verifyPassword?key=AIzaSyA7inINbcgTHYrKPb1mEpZ3LIb3dMAzI_k`, {
       "email": "diogo.alan@v4company.com",
-      "password": "LWA644*yzY9auQH",
+      "password": "M*E!FY7HptWZK@Q",
       "returnSecureToken": true
     });
     return { token: data.idToken };

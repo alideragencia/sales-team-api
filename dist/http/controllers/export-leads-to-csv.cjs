@@ -32,7 +32,8 @@ var prisma = new import_client.PrismaClient();
 var PrismaLeadsRepository = class {
   async getByBatch(batch) {
     const leads = await prisma.lead.findMany({
-      where: { batch }
+      where: { batch },
+      orderBy: { createdAt: "asc" }
     });
     return leads;
   }
@@ -52,7 +53,6 @@ var PrismaLeadsRepository = class {
     return await prisma.lead.findFirst({ where });
   }
   async update(id, data) {
-    console.log({ id, data });
     await prisma.lead.update({
       where: { id },
       data
@@ -178,12 +178,11 @@ var ExportLeadsToCSVUseCase = class {
     console.log("Exportando...");
     useNegativeKeyWords = true;
     const leads = await this.repository.getByBatch(batch);
-    console.log(leads.length);
     const headers = ["ID", "Post", "Nome", "Sobrenome", "Instagram", "Telefone", "Link do Whatsapp", "Email", "Criado em"].join(",");
     const rows = leads.filter((lead) => {
       if (!lead.phone && !lead.mobilephone)
         return false;
-      const name = (lead.firstname + lead.lastname).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+      const name = (lead.firstname + lead.lastname + lead.instagram).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
       const hasNegativeKeyWord = useNegativeKeyWords ? NEGATIVE_KEY_WORDS.find((k) => name.includes(k)) : false;
       if (hasNegativeKeyWord) {
         return false;

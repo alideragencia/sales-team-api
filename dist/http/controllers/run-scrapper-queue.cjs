@@ -129,7 +129,7 @@ var RedriveProvider = class {
   async login() {
     const { data } = await import_axios.default.post(`https://www.googleapis.com/identitytoolkit/v3/relyingparty/verifyPassword?key=AIzaSyA7inINbcgTHYrKPb1mEpZ3LIb3dMAzI_k`, {
       "email": "diogo.alan@v4company.com",
-      "password": "LWA644*yzY9auQH",
+      "password": "M*E!FY7HptWZK@Q",
       "returnSecureToken": true
     });
     return { token: data.idToken };
@@ -299,7 +299,8 @@ var PrismaInstagramQueueTasksRepository = class {
 var PrismaLeadsRepository = class {
   async getByBatch(batch) {
     const leads = await prisma.lead.findMany({
-      where: { batch }
+      where: { batch },
+      orderBy: { createdAt: "asc" }
     });
     return leads;
   }
@@ -319,7 +320,6 @@ var PrismaLeadsRepository = class {
     return await prisma.lead.findFirst({ where: where2 });
   }
   async update(id, data) {
-    console.log({ id, data });
     await prisma.lead.update({
       where: { id },
       data
@@ -348,6 +348,22 @@ var HandleInstagramScrapingTasksUseCase = class {
       console.log(`\u{1F5D2} Checking task ${task.arg}`);
       console.log(t);
       await new Promise((r) => setTimeout(r, 250));
+      const leads = await this.redrive.getLeadsByArg(task.arg);
+      await Promise.all(leads.map(async (lead) => {
+        await this.createLeadUseCase.execute({
+          batch: task.batch,
+          arg: task.arg,
+          lead: {
+            email: lead.email,
+            firstname: lead.firstname,
+            lastname: lead.lastname,
+            instagram: lead.instagram,
+            mobilephone: lead.mobilephone,
+            phone: lead.phone,
+            tags: lead.tags
+          }
+        });
+      }));
       const finish = async () => {
         await this.tasks.update(task.id, {
           status: "FINISHED",
@@ -361,22 +377,6 @@ var HandleInstagramScrapingTasksUseCase = class {
             }
           }
         });
-        const leads = await this.redrive.getLeadsByArg(task.arg);
-        await Promise.all(leads.map(async (lead) => {
-          await this.createLeadUseCase.execute({
-            batch: task.batch,
-            arg: task.arg,
-            lead: {
-              email: lead.email,
-              firstname: lead.firstname,
-              lastname: lead.lastname,
-              instagram: lead.instagram,
-              mobilephone: lead.mobilephone,
-              phone: lead.phone,
-              tags: lead.tags
-            }
-          });
-        }));
         LOGS["FINALIZADAS"]++;
       };
       const repeat = async () => {
@@ -398,8 +398,8 @@ var HandleInstagramScrapingTasksUseCase = class {
       };
       const error = async () => {
         await this.tasks.update(task.id, { status: "FAILED" });
-        const leads = await this.redrive.getLeadsByArg(task.arg);
-        await Promise.all(leads.map(async (lead) => {
+        const leads2 = await this.redrive.getLeadsByArg(task.arg);
+        await Promise.all(leads2.map(async (lead) => {
           await this.createLeadUseCase.execute({
             batch: task.batch,
             arg: task.arg,
@@ -416,17 +416,16 @@ var HandleInstagramScrapingTasksUseCase = class {
         }));
       };
       if (t.status == "pending" || t.status == "pending-new") {
+        await this.tasks.updateByArg(task.arg, { status: "PENDING" });
         LOGS["ESPERANDO"]++;
         continue;
       }
-      if (t.status == "scraping" || t.status == "paused") {
-        LOGS["EXECUTANDO"]++;
-        if (task.status == "RUNNING")
-          continue;
+      if (t.status == "scraping") {
         await this.tasks.update(task.id, { status: "RUNNING" });
+        LOGS["EXECUTANDO"]++;
         continue;
       }
-      if (t.status == "stopped_by_system") {
+      if (t.status == "stopped_by_system" || t.status == "paused") {
         let logs = task.logs;
         logs = logs?.length ? logs.filter((l) => l.event == "STOPPED_BY_SYSTEM") : [];
         if (!logs.length) {
@@ -475,6 +474,7 @@ var HandleInstagramScrapingTasksUseCase = class {
       const max = MAX_ITENS_ON_REDRIVE_QUEUE - remaining.length;
       return tasks2.slice(0, max);
     })();
+    console.log(distributed);
     for (let task of distributed) {
       try {
         LOGS["ADICIONADAS"]++;
@@ -482,10 +482,19 @@ var HandleInstagramScrapingTasksUseCase = class {
         console.log(`Adicionou`);
         console.log(data);
         if (!data?.ack) {
+          console.log(await this.redrive.getLeadsByArg(task.arg));
           await this.tasks.updateByArg(task.arg, { status: "FAILED" });
           throw new Error(`error adding task in redrive queue => ${JSON.stringify(data)}`);
         }
       } catch (e) {
+        console.log(`\u274C Error`);
+        if (e?.response?.data) {
+          console.log(e.response.data);
+        } else if (e?.response) {
+          console.log(e?.response);
+        } else {
+          console.log(e);
+        }
       }
     }
     return LOGS;
@@ -513,7 +522,8 @@ var CreateLeadUseCase = class {
       instagram: lead.instagram,
       mobilephone: lead.mobilephone || null,
       phone: lead.phone || null,
-      tags: lead.tags
+      tags: lead.tags,
+      isLeadQualified: null
     });
   }
 };

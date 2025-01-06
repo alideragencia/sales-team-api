@@ -62,7 +62,6 @@ if (!_env.success) {
   console.error("\u274C Invalid environment variables", _env.error.format());
   throw new Error("Invalid environment varibles.");
 }
-console.log(_env.data);
 var env = _env.data;
 
 // src/lib/get-months-ago.ts

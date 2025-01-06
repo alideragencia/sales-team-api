@@ -15,8 +15,6 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cors({ origin: '*' }));
 app.use(routes);
 
-
-
 app.use(errorHandling)
 
 import './jobs';

@@ -32,7 +32,8 @@ var prisma = new import_client.PrismaClient();
 var PrismaLeadsRepository = class {
   async getByBatch(batch) {
     const leads = await prisma.lead.findMany({
-      where: { batch }
+      where: { batch },
+      orderBy: { createdAt: "asc" }
     });
     return leads;
   }
@@ -52,7 +53,6 @@ var PrismaLeadsRepository = class {
     return await prisma.lead.findFirst({ where });
   }
   async update(id, data) {
-    console.log({ id, data });
     await prisma.lead.update({
       where: { id },
       data

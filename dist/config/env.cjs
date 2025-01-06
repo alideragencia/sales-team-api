@@ -60,7 +60,6 @@ if (!_env.success) {
   console.error("\u274C Invalid environment variables", _env.error.format());
   throw new Error("Invalid environment varibles.");
 }
-console.log(_env.data);
 var env = _env.data;
 // Annotate the CommonJS export names for ESM import in node:
 0 && (module.exports = {

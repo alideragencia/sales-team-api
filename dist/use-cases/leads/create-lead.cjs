@@ -43,7 +43,8 @@ var CreateLeadUseCase = class {
       instagram: lead.instagram,
       mobilephone: lead.mobilephone || null,
       phone: lead.phone || null,
-      tags: lead.tags
+      tags: lead.tags,
+      isLeadQualified: null
     });
   }
 };

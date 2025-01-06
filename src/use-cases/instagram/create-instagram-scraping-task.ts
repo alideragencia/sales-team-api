@@ -1,5 +1,4 @@
 import { IInstagramQueueTasksRepository } from "@/repositories/instagram-queue-tasks-repository"
-import { prisma } from "@/services/database"
 
 type Props = {
     arg: string
